@@ -23,3 +23,13 @@ Because
 Just install using the plugin installer. Done.  You now get daily/monthly hats for QGIS. 
 
 It's pretty much Win Win for you and QGIS and hats all around the world.
+
+## Adding a new hat?
+
+Create a png file in SoManyHats using the following format:
+
+`{month}-{day}.png`
+
+Send me your PRs! You know you want to!
+
+
