@@ -17,4 +17,9 @@ Because
 > Exec #3: [Interrupting] "Not wearing enough"? enough for what purpose?
 
 > Exec #5: Can I just ask, with reference to your second point, when you say souls don't develop because people become distracted...
-```
+
+## Install
+
+Just install using the plugin installer. Done.  You now get daily/monthly hats for QGIS. 
+
+It's pretty much Win Win for you and QGIS and hats all around the world.
