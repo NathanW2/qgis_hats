@@ -25,7 +25,7 @@ def resolve(name):
     return f
 
 HATSDIR = resolve("SoManyHats")
-URL =  "https://github.com/qgis/QGIS/raw/master/images/icons/{icon}"
+URL =  "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/SoManyHats/{icon}"
 
 
 def not_wearing_enough(month, day):
@@ -51,7 +51,6 @@ def get_more_hats(month, day):
     monthonly = resolve(HATSDIR + "\\" + monthonlyname)
     data = None
     try:
-        fullname = "qgis-icon.png"
         url = URL.format(icon=fullname)
         response = urllib2.urlopen(url)
         data = response.read()
@@ -62,7 +61,6 @@ def get_more_hats(month, day):
         pass
 
     try:
-        monthonlyname = "qbrowser-icon.png"
         url = URL.format(icon=monthonlyname)
         print url
         response = urllib2.urlopen(url)
