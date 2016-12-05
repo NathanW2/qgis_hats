@@ -33,6 +33,12 @@ def not_wearing_enough(month, day):
     month = str(month).zfill(2)
     fullpath = resolve(HATSDIR + "\{0}-{1}.png".format(str(month), str(day)))
     monthonly = resolve(HATSDIR + "\{0}.png".format(str(month)))
+
+    if os.path.exists(fullpath):
+        return fullpath
+    else:
+        get_more_hats(month, day)
+
     if os.path.exists(fullpath):
         return fullpath
     elif os.path.exists(monthonly):
@@ -43,6 +49,7 @@ def not_wearing_enough(month, day):
 def get_more_hats(month, day):
     if not os.path.exists(HATSDIR):
         os.makedirs(HATSDIR)
+
     day = str(day).zfill(2)
     month = str(month).zfill(2)
     fullname = "{0}-{1}.png".format(str(month), str(day))
@@ -56,18 +63,15 @@ def get_more_hats(month, day):
         data = response.read()
         with open(fullpath, "wb") as f:
             f.write(data)
-        return fullpath
     except Exception as ex:
         pass
 
     try:
         url = URL.format(icon=monthonlyname)
-        print url
         response = urllib2.urlopen(url)
         data = response.read()
         with open(monthonly, "wb") as f:
             f.write(data)
-        return monthonly
     except Exception as ex:
         pass
 
@@ -81,8 +85,6 @@ class HatsSoManyHats:
         month = current.date().month()
         day = current.date().day()
         hat = not_wearing_enough(month, day)
-        if not hat:
-            hat = get_more_hats(month, day)
 
         if hat:
             icon = QIcon(hat)

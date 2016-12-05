@@ -1,7 +1,13 @@
 [general]
 name=QGIS Hats
 description=Because people are not wearing enough hats.
+about=Downloads daily and monthly hats for QGIS.  Because why not ;)
 version=1.0
 qgisMinimumVersion=2.0
 author=Nathan Woodrow
 email=woodrow.nathan@gmail.com
+
+icon=icon.png
+homepage=https://github.com/NathanW2/qgis_hats
+tracker=https://github.com/NathanW2/qgis_hats
+repository=https://github.com/NathanW2/qgis_hats
