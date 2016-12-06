@@ -22,9 +22,9 @@ Because
 
 ## Install
 
-Just install using the plugin installer. Done.  You now get daily/monthly hats for QGIS. 
+Just install using the plugin installer. Done.  You now get daily/monthly hats for your QGIS logo. 
 
-It's pretty much Win Win for you and QGIS and hats all around the world.
+It's pretty much a win win for you, QGIS, and hats all around the world.
 
 ## Adding a new hat?
 
