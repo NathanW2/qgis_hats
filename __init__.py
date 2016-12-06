@@ -11,7 +11,6 @@
 
 import os
 import urllib2
-from urllib.error import HTTPError
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
