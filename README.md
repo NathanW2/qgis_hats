@@ -32,6 +32,10 @@ Create a png file in SoManyHats using the following format:
 
 `{month}-{day}.png`
 
+Here is a easy example:
+
+![Alt text](SoManyHats/12-05.png?raw=true "Title")
+
 Send me your PRs! You know you want to!
 
 
