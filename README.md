@@ -32,6 +32,8 @@ Create a png file in SoManyHats using the following format:
 
 `{month}-{day}.png`
 
+or just `{month}.png` if it's to conver a full month.
+
 Here is a easy example:
 
 ![Alt text](SoManyHats/12-05.png?raw=true "Title")
