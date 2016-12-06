@@ -1,5 +1,7 @@
 # Hats for QGIS icons
 
+![Alt text](SoManyHats/12-05.png?raw=true "Title")
+
 Because
 
 > Exec #1: Item six on the agenda: "The Meaning of Life" Now uh, Harry, you've had some thoughts on this.
