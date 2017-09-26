@@ -1,5 +1,7 @@
 # Hats for QGIS icons
 
+Send me your PRs! You know you want to!
+
 ![Alt text](SoManyHats/12-05.png?raw=true "Title")
 
 Because
@@ -38,6 +40,11 @@ Here is a easy example:
 
 ![Alt text](SoManyHats/12-05.png?raw=true "Title")
 
-Send me your PRs! You know you want to!
+## Adding a new hat? QGIS 3
 
+Add _3 to the end of the file name to make it usable by QGIS 3.
 
+Example:
+
+03_03.png <- QGIS 3 icon
+03.png <- QGIS 2 icon

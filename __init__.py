@@ -10,10 +10,19 @@
 #---------------------------------------------------------------------
 
 import os
-import urllib2
+import sys
 
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+PYTHON3 = sys.version_info[0] >= 3
+
+if PYTHON3:
+    from urllib.request import urlopen
+else:
+    from urllib2 import urlopen
+
+from qgis.PyQt.QtGui import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtWidgets import *
+from qgis.core import QgsMessageLog
 
 def classFactory(iface):
     return HatsSoManyHats(iface)
@@ -27,11 +36,18 @@ HATSDIR = resolve("SoManyHats")
 URL =  "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/SoManyHats/{icon}"
 
 
-def not_wearing_enough(month, day):
+def hat_names(month, day):
     day = str(day).zfill(2)
     month = str(month).zfill(2)
-    fullpath = resolve(HATSDIR + "\{0}-{1}.png".format(str(month), str(day)))
-    monthonly = resolve(HATSDIR + "\{0}.png".format(str(month)))
+    versionflag = "_3" if PYTHON3 else ""
+    fullpath = resolve(HATSDIR + "\{0}-{1}{2}.png".format(str(month), str(day), versionflag))
+    monthonly = resolve(HATSDIR + "\{0}{1}.png".format(str(month), versionflag))
+    QgsMessageLog.logMessage(fullpath, "hats")
+    return fullpath, monthonly
+
+
+def not_wearing_enough(month, day):
+    fullpath, monthonly = hat_names(month, day)
 
     if os.path.exists(fullpath):
         return fullpath
@@ -49,16 +65,12 @@ def get_more_hats(month, day):
     if not os.path.exists(HATSDIR):
         os.makedirs(HATSDIR)
 
-    day = str(day).zfill(2)
-    month = str(month).zfill(2)
-    fullname = "{0}-{1}.png".format(str(month), str(day))
-    monthonlyname = "{0}.png".format(str(month))
-    fullpath = resolve(HATSDIR + "\\" + fullname)
-    monthonly = resolve(HATSDIR + "\\" + monthonlyname)
+    fullpath, monthonly = hat_names(month, day)
+
     data = None
     try:
         url = URL.format(icon=fullname)
-        response = urllib2.urlopen(url)
+        response = urlopen(url)
         data = response.read()
         with open(fullpath, "wb") as f:
             f.write(data)
@@ -67,7 +79,7 @@ def get_more_hats(month, day):
 
     try:
         url = URL.format(icon=monthonlyname)
-        response = urllib2.urlopen(url)
+        response = urlopen(url)
         data = response.read()
         with open(monthonly, "wb") as f:
             f.write(data)
