@@ -75,7 +75,9 @@ def not_wearing_enough(month, day):
         QgsMessageLog.logMessage("Found hat at", "hats")
         QgsMessageLog.logMessage(monthonly, "hats")
         return monthonly
-    return None
+    else:
+        QgsMessageLog.logMessage("Can't find hat at {} or {}".format(fullpath, monthonly), "hats")
+        return None
 
 
 def get_more_hats(month, day):
