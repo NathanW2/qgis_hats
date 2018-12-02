@@ -4,6 +4,7 @@ description=Because people are not wearing enough hats.
 about=Downloads daily and monthly hats for QGIS.  Because why not ;)
 version=1.2
 qgisMinimumVersion=2.0
+qgisMaximumVersion=3.99
 author=Nathan Woodrow
 email=woodrow.nathan@gmail.com
 changelog=1.1 - Fix HTTPError import

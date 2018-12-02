@@ -1,13 +1,13 @@
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Copyright (C) 2015 Martin Dobias
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Licensed under the terms of GNU GPL 2
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-#---------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 import os
 import sys
@@ -24,39 +24,56 @@ from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtWidgets import *
 from qgis.core import QgsMessageLog
 
+
 def classFactory(iface):
     return HatsSoManyHats(iface)
+
 
 def resolve(name):
     filename = __file__
     f = os.path.join(os.path.dirname(filename), name)
     return f
 
-HATSDIR = resolve("SoManyHats")
-URL =  "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/SoManyHats/{icon}"
+
+if PYTHON3:
+    HATSDIR = resolve("SoManyMoreHats")
+    URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/SoManyMoreHats/{icon}"
+else:
+    HATSDIR = resolve("SoManyHats")
+    URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/SoManyHats/{icon}"
 
 
 def hat_names(month, day):
     day = str(day).zfill(2)
     month = str(month).zfill(2)
-    versionflag = "_3" if PYTHON3 else ""
-    fullpath = resolve(HATSDIR + "\{0}-{1}{2}.png".format(str(month), str(day), versionflag))
-    monthonly = resolve(HATSDIR + "\{0}{1}.png".format(str(month), versionflag))
-    QgsMessageLog.logMessage(fullpath, "hats")
-    return fullpath, monthonly
+    dayname = "{0}-{1}.png".format(str(month), str(day))
+    monthname = "{0}.png".format(str(month))
+    fullpath = os.path.join(resolve(HATSDIR), dayname)
+    monthonly = os.path.join(resolve(HATSDIR), monthname)
+    return fullpath, monthonly, dayname, monthname
 
 
 def not_wearing_enough(month, day):
-    fullpath, monthonly = hat_names(month, day)
+    fullpath, monthonly, _, _ = hat_names(month, day)
 
     if os.path.exists(fullpath):
+        QgsMessageLog.logMessage("Found hat at", "hats")
+        QgsMessageLog.logMessage(fullpath, "hats")
         return fullpath
     else:
+        QgsMessageLog.logMessage("Fetching hats", "hats")
         get_more_hats(month, day)
 
+    QgsMessageLog.logMessage(monthonly, "hats")
+    QgsMessageLog.logMessage(fullpath, "hats")
+
     if os.path.exists(fullpath):
+        QgsMessageLog.logMessage("Found hat at", "hats")
+        QgsMessageLog.logMessage(fullpath, "hats")
         return fullpath
     elif os.path.exists(monthonly):
+        QgsMessageLog.logMessage("Found hat at", "hats")
+        QgsMessageLog.logMessage(monthonly, "hats")
         return monthonly
     return None
 
@@ -65,11 +82,11 @@ def get_more_hats(month, day):
     if not os.path.exists(HATSDIR):
         os.makedirs(HATSDIR)
 
-    fullpath, monthonly = hat_names(month, day)
+    fullpath, monthonly, dayname, monthname = hat_names(month, day)
 
-    data = None
     try:
-        url = URL.format(icon=fullname)
+        url = URL.format(icon=dayname)
+        QgsMessageLog.logMessage(url, "hats")
         response = urlopen(url)
         data = response.read()
         with open(fullpath, "wb") as f:
@@ -78,7 +95,8 @@ def get_more_hats(month, day):
         pass
 
     try:
-        url = URL.format(icon=monthonlyname)
+        url = URL.format(icon=monthname)
+        QgsMessageLog.logMessage(url, "hats")
         response = urlopen(url)
         data = response.read()
         with open(monthonly, "wb") as f:

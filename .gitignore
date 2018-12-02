@@ -52,3 +52,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+src/qgis_hats/SoManyMoreHats
+src/qgis_hats/SoManyHats
+src/qgis_hats/SoManySplashes
