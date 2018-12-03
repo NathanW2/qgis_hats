@@ -12,6 +12,8 @@
 import os
 import sys
 
+WIN = os.name == "nt"
+
 PYTHON3 = sys.version_info[0] >= 3
 
 if PYTHON3:
@@ -23,6 +25,9 @@ from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtWidgets import *
 from qgis.core import QgsMessageLog
+
+if WIN:
+    from PyQt5.QtWinExtras import QWinTaskbarButton
 
 
 def classFactory(iface):
@@ -43,11 +48,15 @@ else:
     URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/SoManyHats/{icon}"
 
 
-def hat_names(month, day):
+def hat_names(month, day, overlay=False):
     day = str(day).zfill(2)
     month = str(month).zfill(2)
-    dayname = "{0}-{1}.png".format(str(month), str(day))
-    monthname = "{0}.png".format(str(month))
+    if overlay:
+        dayname = "{0}-{1}-overlay.png".format(str(month), str(day))
+        monthname = "{0}-overlay.png".format(str(month))
+    else:
+        dayname = "{0}-{1}.png".format(str(month), str(day))
+        monthname = "{0}.png".format(str(month))
     fullpath = os.path.join(resolve(HATSDIR), dayname)
     monthonly = os.path.join(resolve(HATSDIR), monthname)
     return fullpath, monthonly, dayname, monthname
@@ -55,72 +64,92 @@ def hat_names(month, day):
 
 def not_wearing_enough(month, day):
     fullpath, monthonly, _, _ = hat_names(month, day)
+    overlay_fullpath, overlay_monthonly, _, _ = hat_names(month, day, overlay=True)
 
+    get_more_hats(month, day)
+
+    overlay = None
+    if os.path.exists(overlay_fullpath):
+        QgsMessageLog.logMessage("Found overlay at", "hats")
+        QgsMessageLog.logMessage(overlay_fullpath, "hats")
+        overlay = overlay_fullpath
+    elif os.path.exists(overlay_monthonly):
+        QgsMessageLog.logMessage("Found overlay at", "hats")
+        QgsMessageLog.logMessage(overlay_monthonly, "hats")
+        overlay = overlay_monthonly
+
+    path = None
     if os.path.exists(fullpath):
         QgsMessageLog.logMessage("Found hat at", "hats")
         QgsMessageLog.logMessage(fullpath, "hats")
-        return fullpath
-    else:
-        QgsMessageLog.logMessage("Fetching hats", "hats")
-        get_more_hats(month, day)
-
-    QgsMessageLog.logMessage(monthonly, "hats")
-    QgsMessageLog.logMessage(fullpath, "hats")
-
-    if os.path.exists(fullpath):
-        QgsMessageLog.logMessage("Found hat at", "hats")
-        QgsMessageLog.logMessage(fullpath, "hats")
-        return fullpath
+        path = fullpath
     elif os.path.exists(monthonly):
         QgsMessageLog.logMessage("Found hat at", "hats")
         QgsMessageLog.logMessage(monthonly, "hats")
-        return monthonly
+        path = monthonly
     else:
         QgsMessageLog.logMessage("Can't find hat at {} or {}".format(fullpath, monthonly), "hats")
-        return None
+
+    return path, overlay
 
 
 def get_more_hats(month, day):
+    def fetch_more(name, outpath):
+        try:
+            url = URL.format(icon=name)
+            response = urlopen(url)
+            data = response.read()
+            with open(outpath, "wb") as f:
+                f.write(data)
+        except Exception as ex:
+            pass
+
     if not os.path.exists(HATSDIR):
         os.makedirs(HATSDIR)
 
     fullpath, monthonly, dayname, monthname = hat_names(month, day)
+    overlay_fullpath, overlay_monthonly, overlay_dayname, overlay_monthname = hat_names(month, day, overlay=True)
 
-    try:
-        url = URL.format(icon=dayname)
-        QgsMessageLog.logMessage(url, "hats")
-        response = urlopen(url)
-        data = response.read()
-        with open(fullpath, "wb") as f:
-            f.write(data)
-    except Exception as ex:
-        pass
-
-    try:
-        url = URL.format(icon=monthname)
-        QgsMessageLog.logMessage(url, "hats")
-        response = urlopen(url)
-        data = response.read()
-        with open(monthonly, "wb") as f:
-            f.write(data)
-    except Exception as ex:
-        pass
+    fetch_more(dayname, fullpath)
+    fetch_more(monthname, monthonly)
+    fetch_more(overlay_dayname, overlay_fullpath)
+    fetch_more(overlay_monthname, overlay_monthonly)
 
 
-class HatsSoManyHats:
+class HatsSoManyHats(QObject):
     def __init__(self, iface):
+        super().__init__()
         self.iface = iface
+        self.iface.mainWindow().installEventFilter(self)
+
+    def eventFilter(self, object, event):
+        if self.iface.mainWindow().windowHandle() and self.iface.mainWindow().windowHandle().title():
+            self.show_the_hats()
+
+        return super().eventFilter(object, event)
 
     def initGui(self):
+        pass
+
+    def show_the_hats(self):
+        self.iface.mainWindow().removeEventFilter(self)
         current = QDateTime.currentDateTime()
         month = current.date().month()
         day = current.date().day()
-        hat = not_wearing_enough(month, day)
-
+        hat, overlay = not_wearing_enough(month, day)
         if hat:
             icon = QIcon(hat)
             QApplication.instance().setWindowIcon(icon)
             self.iface.mainWindow().setWindowIcon(icon)
+
+        if overlay and WIN:
+            QgsMessageLog.logMessage("Set overlay", "hats")
+            self.button = QWinTaskbarButton()
+            QgsMessageLog.logMessage(self.iface.mainWindow().windowHandle().title(), "hats")
+            self.button.setWindow(self.iface.mainWindow().windowHandle())
+            self.button.setOverlayIcon(QIcon(overlay))
+        else:
+            QgsMessageLog.logMessage("No overlay set", "hats")
 
     def unload(self):
         pass
