@@ -120,15 +120,16 @@ class HatsSoManyHats(QObject):
     def __init__(self, iface):
         super().__init__()
         self.iface = iface
-        self.iface.mainWindow().installEventFilter(self)
+        # self.iface.mainWindow().installEventFilter(self)
 
-    def eventFilter(self, object, event):
-        if self.iface.mainWindow().windowHandle() and self.iface.mainWindow().windowHandle().title():
-            self.show_the_hats()
-
-        return super().eventFilter(object, event)
+    # def eventFilter(self, object, event):
+    #     if self.iface.mainWindow().windowHandle() and self.iface.mainWindow().windowHandle().title():
+    #         self.show_the_hats()
+    #
+    #     return super().eventFilter(object, event)
 
     def initGui(self):
+        self.show_the_hats()
         pass
 
     def show_the_hats(self):
@@ -142,14 +143,13 @@ class HatsSoManyHats(QObject):
             QApplication.instance().setWindowIcon(icon)
             self.iface.mainWindow().setWindowIcon(icon)
 
-        if overlay and WIN:
-            QgsMessageLog.logMessage("Set overlay", "hats")
-            self.button = QWinTaskbarButton()
-            QgsMessageLog.logMessage(self.iface.mainWindow().windowHandle().title(), "hats")
-            self.button.setWindow(self.iface.mainWindow().windowHandle())
-            self.button.setOverlayIcon(QIcon(overlay))
-        else:
-            QgsMessageLog.logMessage("No overlay set", "hats")
+        # if overlay and WIN:
+        #     QgsMessageLog.logMessage("Set overlay", "hats")
+        #     self.button = QWinTaskbarButton()
+        #     self.button.setWindow(self.iface.mainWindow().windowHandle())
+        #     self.button.setOverlayIcon(QIcon(overlay))
+        # else:
+        #     QgsMessageLog.logMessage("No overlay set", "hats")
 
     def unload(self):
         pass
