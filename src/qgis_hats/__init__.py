@@ -11,20 +11,30 @@
 
 import os
 import sys
+import pathlib
 
 WIN = os.name == "nt"
 
 PYTHON3 = sys.version_info[0] >= 3
 
 if PYTHON3:
+    from urllib.error import HTTPError
     from urllib.request import urlopen
 else:
-    from urllib2 import urlopen
+    from urllib2 import urlopen, HTTPError
 
 from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtWidgets import *
-from qgis.core import QgsMessageLog
+from qgis.core import QgsMessageLog, Qgis, QgsSettings, QgsApplication
+
+def log(message):
+    QgsMessageLog.logMessage(message, "hats")
+
+if __name__ == "__main__":
+    log = print
+
+
 
 if WIN:
     from PyQt5.QtWinExtras import QWinTaskbarButton
@@ -40,15 +50,23 @@ def resolve(name):
     return f
 
 
+versiondata = Qgis.QGIS_VERSION.split(".")
+QGIS_VERSION = versiondata[0] + "." + versiondata[1]
+
 if PYTHON3:
-    HATSDIR = resolve("SoManyMoreHats")
-    URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/SoManyMoreHats/{icon}"
+    HATSDIRNAME = "SoManyMoreHats"
 else:
-    HATSDIR = resolve("SoManyHats")
-    URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/SoManyHats/{icon}"
+    HATSDIRNAME = "SoManyHats"
+
+HATSDIR = resolve(HATSDIRNAME)
+SPLASHDIRNAME = "SoManySplashes"
+SPLASHPATH = resolve(os.path.join(SPLASHDIRNAME, QGIS_VERSION))
+
+URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/{folder}/{icon}"
+SPLASH_URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/{folder}/{version}/{icon}"
 
 
-def hat_names(month, day, overlay=False):
+def hat_names(month, day, overlay=False, folder=HATSDIR):
     day = str(day).zfill(2)
     month = str(month).zfill(2)
     if overlay:
@@ -57,63 +75,77 @@ def hat_names(month, day, overlay=False):
     else:
         dayname = "{0}-{1}.png".format(str(month), str(day))
         monthname = "{0}.png".format(str(month))
-    fullpath = os.path.join(resolve(HATSDIR), dayname)
-    monthonly = os.path.join(resolve(HATSDIR), monthname)
+    fullpath = os.path.join(resolve(folder), dayname)
+    monthonly = os.path.join(resolve(folder), monthname)
+    return fullpath, monthonly, dayname, monthname
+
+
+def splash_names(month, day):
+    day = str(day).zfill(2)
+    month = str(month).zfill(2)
+    dayname = "{0}-{1}.png".format(str(month), str(day))
+    monthname = "{0}.png".format(str(month))
+    fullpath = os.path.join(resolve(SPLASHPATH), str(month), str(day), "splash.png")
+    monthonly = os.path.join(resolve(SPLASHPATH), str(month), "splash.png")
     return fullpath, monthonly, dayname, monthname
 
 
 def not_wearing_enough(month, day):
-    fullpath, monthonly, _, _ = hat_names(month, day)
-    overlay_fullpath, overlay_monthonly, _, _ = hat_names(month, day, overlay=True)
+    def get_final_path(*paths):
+        for path in paths:
+            if os.path.exists(path):
+                log("Found {}".format(path))
+                return path
+        log("Can't find any paths from {}".format("|".join(paths)))
+        return None
+
+    fullpath, monthonly, _, _ = hat_names(month, day, folder=HATSDIR)
+    overlay_fullpath, overlay_monthonly, _, _ = hat_names(month, day, overlay=True, folder=HATSDIR)
+    splash_fullpath, splash_monthonly, _, _ = splash_names(month, day)
 
     get_more_hats(month, day)
 
-    overlay = None
-    if os.path.exists(overlay_fullpath):
-        QgsMessageLog.logMessage("Found overlay at", "hats")
-        QgsMessageLog.logMessage(overlay_fullpath, "hats")
-        overlay = overlay_fullpath
-    elif os.path.exists(overlay_monthonly):
-        QgsMessageLog.logMessage("Found overlay at", "hats")
-        QgsMessageLog.logMessage(overlay_monthonly, "hats")
-        overlay = overlay_monthonly
+    overlay = get_final_path(overlay_fullpath, overlay_monthonly)
+    path = get_final_path(fullpath, monthonly)
+    splash = get_final_path(splash_fullpath, splash_monthonly)
 
-    path = None
-    if os.path.exists(fullpath):
-        QgsMessageLog.logMessage("Found hat at", "hats")
-        QgsMessageLog.logMessage(fullpath, "hats")
-        path = fullpath
-    elif os.path.exists(monthonly):
-        QgsMessageLog.logMessage("Found hat at", "hats")
-        QgsMessageLog.logMessage(monthonly, "hats")
-        path = monthonly
-    else:
-        QgsMessageLog.logMessage("Can't find hat at {} or {}".format(fullpath, monthonly), "hats")
-
-    return path, overlay
+    if splash:
+        splash = os.path.dirname(splash)
+    return path, overlay, splash
 
 
 def get_more_hats(month, day):
-    def fetch_more(name, outpath):
+    def fetch_more(url, folder, name, outpath, **kwargs):
+        # If it's there already just skip over it.
+        if os.path.exists(outpath):
+            log("Found {} skipping request for more".format(outpath))
+            return
+
         try:
-            url = URL.format(icon=name)
+            url = url.format(folder=folder, icon=name, **kwargs)
+            log(url)
             response = urlopen(url)
             data = response.read()
+            pathlib.Path(os.path.dirname(outpath)).mkdir(parents=True, exist_ok=True)
             with open(outpath, "wb") as f:
                 f.write(data)
-        except Exception as ex:
-            pass
+        except HTTPError as ex:
+            if ex.code == 404:
+                pass
+            log(str(ex))
 
-    if not os.path.exists(HATSDIR):
-        os.makedirs(HATSDIR)
+    fullpath, monthonly, dayname, monthname = hat_names(month, day, folder=HATSDIR)
+    overlay_fullpath, overlay_monthonly, overlay_dayname, overlay_monthname = hat_names(month, day, overlay=True,
+                                                                                        folder=HATSDIR)
+    splash_fullpath, splash_monthonly, splash_dayname, splash_monthname = splash_names(month, day)
 
-    fullpath, monthonly, dayname, monthname = hat_names(month, day)
-    overlay_fullpath, overlay_monthonly, overlay_dayname, overlay_monthname = hat_names(month, day, overlay=True)
+    fetch_more(URL, HATSDIRNAME, dayname, fullpath)
+    fetch_more(URL, HATSDIRNAME, monthname, monthonly)
+    fetch_more(URL, HATSDIRNAME, overlay_dayname, overlay_fullpath)
+    fetch_more(URL, HATSDIRNAME, overlay_monthname, overlay_monthonly)
 
-    fetch_more(dayname, fullpath)
-    fetch_more(monthname, monthonly)
-    fetch_more(overlay_dayname, overlay_fullpath)
-    fetch_more(overlay_monthname, overlay_monthonly)
+    fetch_more(SPLASH_URL, SPLASHDIRNAME, splash_dayname, splash_fullpath, version=QGIS_VERSION)
+    fetch_more(SPLASH_URL, SPLASHDIRNAME, splash_monthname, splash_monthonly, version=QGIS_VERSION)
 
 
 class HatsSoManyHats(QObject):
@@ -130,26 +162,43 @@ class HatsSoManyHats(QObject):
 
     def initGui(self):
         self.show_the_hats()
-        pass
 
     def show_the_hats(self):
-        self.iface.mainWindow().removeEventFilter(self)
+        # self.iface.mainWindow().removeEventFilter(self)
         current = QDateTime.currentDateTime()
         month = current.date().month()
         day = current.date().day()
-        hat, overlay = not_wearing_enough(month, day)
+        hat, overlay, splash = not_wearing_enough(month, day)
         if hat:
             icon = QIcon(hat)
             QApplication.instance().setWindowIcon(icon)
             self.iface.mainWindow().setWindowIcon(icon)
 
+        if splash:
+            path = os.path.join(QgsApplication.qgisSettingsDirPath(), "QGIS", "QGISCUSTOMIZATION3.ini")
+            settings = QSettings(path, QSettings.IniFormat)
+            key = "Customization/splashpath"
+            value = splash + "\\"
+            currentvalue = settings.value(key)
+            if currentvalue != value:
+                log("Setting splash to {}".format(splash))
+                settings.setValue(key, value)
+                qgssettings = QgsSettings()
+                qgssettings.setValue("UI/Customization/enabled", True)
+                self.iface.messageBar().pushMessage("Splash updated! Yay. Restart QGIS to check it out!")
+
         # if overlay and WIN:
-        #     QgsMessageLog.logMessage("Set overlay", "hats")
+        #     log("Set overlay", "hats")
         #     self.button = QWinTaskbarButton()
         #     self.button.setWindow(self.iface.mainWindow().windowHandle())
         #     self.button.setOverlayIcon(QIcon(overlay))
         # else:
-        #     QgsMessageLog.logMessage("No overlay set", "hats")
+        #     log("No overlay set", "hats")
 
     def unload(self):
         pass
+
+
+if __name__ == "__main__":
+    t = HatsSoManyHats(None)
+    t.initGui()
