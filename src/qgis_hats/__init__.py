@@ -174,11 +174,11 @@ class HatsSoManyHats(QObject):
             QApplication.instance().setWindowIcon(icon)
             self.iface.mainWindow().setWindowIcon(icon)
 
+        key = "Customization/splashpath"
+        value = splash + "\\"
+        path = os.path.join(QgsApplication.qgisSettingsDirPath(), "QGIS", "QGISCUSTOMIZATION3.ini")
+        settings = QSettings(path, QSettings.IniFormat)
         if splash:
-            path = os.path.join(QgsApplication.qgisSettingsDirPath(), "QGIS", "QGISCUSTOMIZATION3.ini")
-            settings = QSettings(path, QSettings.IniFormat)
-            key = "Customization/splashpath"
-            value = splash + "\\"
             currentvalue = settings.value(key)
             if currentvalue != value:
                 log("Setting splash to {}".format(splash))
@@ -186,6 +186,8 @@ class HatsSoManyHats(QObject):
                 qgssettings = QgsSettings()
                 qgssettings.setValue("UI/Customization/enabled", True)
                 self.iface.messageBar().pushMessage("Splash updated! Yay. Restart QGIS to check it out!")
+        else:
+            settings.remove(key)
 
         # if overlay and WIN:
         #     log("Set overlay", "hats")
