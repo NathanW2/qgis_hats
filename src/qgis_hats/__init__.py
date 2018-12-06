@@ -175,10 +175,10 @@ class HatsSoManyHats(QObject):
             self.iface.mainWindow().setWindowIcon(icon)
 
         key = "Customization/splashpath"
-        value = splash + "\\"
         path = os.path.join(QgsApplication.qgisSettingsDirPath(), "QGIS", "QGISCUSTOMIZATION3.ini")
         settings = QSettings(path, QSettings.IniFormat)
         if splash:
+            value = splash + os.sep
             currentvalue = settings.value(key)
             if currentvalue != value:
                 log("Setting splash to {}".format(splash))
