@@ -22,7 +22,7 @@ if PYTHON3:
     import urllib.request
     import json
 
-    from urllib.error import HTTPError
+    from urllib.error import HTTPError, URLError
     from urllib.request import urlopen
 else:
     from urllib2 import urlopen, HTTPError
@@ -31,48 +31,6 @@ from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtWidgets import *
 from qgis.core import QgsMessageLog, Qgis, QgsSettings, QgsApplication
-
-def log(message):
-    QgsMessageLog.logMessage(message, "hats")
-
-if __name__ == "__main__":
-    log = print
-
-
-if WIN:
-    from PyQt5.QtWinExtras import QWinTaskbarButton
-
-SUNURL = "https://api.sunrise-sunset.org/json?lat={latitude}&lng={longitude}&formatted=0"
-
-DAY = "day"
-NIGHT = "night"
-
-def _getsundata():
-    if os.path.exists("sun.json"):
-        with open("sun.json") as f:
-            return json.load(f)
-    else:
-        log("Fetching location info")
-        with urllib.request.urlopen("https://geoip-db.com/json") as url:
-            data = json.loads(url.read().decode())
-            with urllib.request.urlopen(SUNURL.format(**data)) as sunurl:
-                sundata = json.loads(sunurl.read().decode())
-                with open("sun.json", "w") as f:
-                    json.dump(sundata, f)
-                return sundata
-
-
-def is_nighttime():
-    sundata = _getsundata()
-    sunrise = sundata["results"]["sunrise"]
-    sunset = sundata["results"]["sunset"]
-    sunrise = QDateTime.fromString(sunrise, Qt.ISODate)
-    sunset = QDateTime.fromString(sunset, Qt.ISODate)
-    now = QDateTime.currentDateTimeUtc()
-    if sunrise < now < sunset:
-        return False
-    else:
-        return True
 
 
 def classFactory(iface):
@@ -85,6 +43,16 @@ def resolve(name):
     return f
 
 
+def log(message):
+    QgsMessageLog.logMessage(message, "hats")
+
+
+if __name__ == "__main__":
+    log = print
+
+if WIN:
+    from PyQt5.QtWinExtras import QWinTaskbarButton
+
 versiondata = Qgis.QGIS_VERSION.split(".")
 QGIS_VERSION = versiondata[0] + "." + versiondata[1]
 
@@ -96,12 +64,54 @@ else:
 HATSDIR = resolve(HATSDIRNAME)
 SPLASHDIRNAME = "SoManySplashes"
 SPLASHPATH = resolve(os.path.join(SPLASHDIRNAME, QGIS_VERSION))
-ACTIVESPLASH = os.path.join(SPLASHDIRNAME, "active")
+ACTIVESPLASH = resolve(os.path.join(SPLASHDIRNAME, "active"))
+SUNFILE = resolve("sun.json")
 
 pathlib.Path(ACTIVESPLASH).mkdir(parents=True, exist_ok=True)
 
+SUNURL = "https://api.sunrise-sunset.org/json?lat={latitude}&lng={longitude}&formatted=0"
 URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/{folder}/{icon}"
 SPLASH_URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/{folder}/{version}/{icon}"
+
+
+def _get_sun_data():
+    # TODO: Add 30 day time out on sun data
+    if os.path.exists(SUNFILE):
+        with open(SUNFILE) as f:
+            return json.load(f)
+    else:
+        log("Fetching location info")
+        try:
+            with urllib.request.urlopen("https://geoip-db.com/json") as url:
+                data = json.loads(url.read().decode())
+                log("Fetching sun data")
+                with urllib.request.urlopen(SUNURL.format(**data)) as sunurl:
+                    sundata = json.loads(sunurl.read().decode())
+                    with open(SUNFILE, "w") as f:
+                        json.dump(sundata, f)
+                    return sundata
+        except URLError as ex:
+            log("Error fetching location and sun data")
+            log(str(ex))
+            return {}
+
+
+def is_nighttime():
+    sundata = _get_sun_data()
+    if not sundata:
+        return False
+
+    sunrise = sundata["results"]["sunrise"]
+    sunset = sundata["results"]["sunset"]
+    sunrise = QDateTime.fromString(sunrise, Qt.ISODate)
+    sunset = QDateTime.fromString(sunset, Qt.ISODate)
+    now = QDateTime.currentDateTimeUtc()
+    if sunrise < now < sunset:
+        log("Day")
+        return False
+    else:
+        log("Night")
+        return True
 
 
 def hat_names(month, day, overlay=False, folder=HATSDIR):
@@ -119,6 +129,12 @@ def hat_names(month, day, overlay=False, folder=HATSDIR):
 
 
 def splash_names(month, day):
+    """
+    Return the names and paths for the splash screens based on the month and day.
+    :param month: Month
+    :param day: Day
+    :return: Paths and names of splash screens.
+    """
     day = str(day).zfill(2)
     month = str(month).zfill(2)
     modestr = "-night" if is_nighttime() else ""
@@ -158,8 +174,10 @@ def set_splash_active(splash):
     :return:
     """
     log("Setting {} to active".format(splash))
-    shutil.copy(splash, os.path.join(ACTIVESPLASH, "splash.png"))
-    return os.path.dirname(splash)
+    newname = os.path.join(ACTIVESPLASH, "splash.png")
+    shutil.copy(splash, newname)
+    return os.path.dirname(newname)
+
 
 def get_more_hats(month, day):
     def fetch_more(url, folder, name, outpath, **kwargs):
@@ -229,9 +247,9 @@ class HatsSoManyHats(QObject):
         activesplash = qgssettings.value(activekey, None)
         if splash:
             splashname = os.path.basename(splash)
-            if splashname != activesplash:
-                set_splash_active(splash)
-                value = ACTIVESPLASH + os.sep
+            if splashname != activesplash or not settings.value(key, None):
+                activepath = set_splash_active(splash)
+                value = activepath + os.sep
                 settings.setValue(key, value)
 
                 qgssettings.setValue("UI/Customization/enabled", True)
