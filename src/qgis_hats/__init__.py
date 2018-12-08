@@ -62,17 +62,17 @@ def _getsundata():
                 return sundata
 
 
-def is_it_daytime_or_nighttime():
+def is_nighttime():
     sundata = _getsundata()
     sunrise = sundata["results"]["sunrise"]
     sunset = sundata["results"]["sunset"]
     sunrise = QDateTime.fromString(sunrise, Qt.ISODate)
     sunset = QDateTime.fromString(sunset, Qt.ISODate)
     now = QDateTime.currentDateTimeUtc()
-    if now > sunrise and now < sunset:
-        return DAY
+    if sunrise < now < sunset:
+        return False
     else:
-        return NIGHT
+        return True
 
 
 def classFactory(iface):
@@ -121,8 +121,7 @@ def hat_names(month, day, overlay=False, folder=HATSDIR):
 def splash_names(month, day):
     day = str(day).zfill(2)
     month = str(month).zfill(2)
-    mode = is_it_daytime_or_nighttime()
-    modestr = "-night" if mode == NIGHT else ""
+    modestr = "-night" if is_nighttime() else ""
     dayname = "{0}-{1}{2}.png".format(str(month), str(day), modestr)
     monthname = "{0}{1}.png".format(str(month), modestr)
     fullpath = os.path.join(resolve(SPLASHPATH), dayname)
