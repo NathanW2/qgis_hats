@@ -153,6 +153,11 @@ def not_wearing_enough(month, day):
 
 
 def set_splash_active(splash):
+    """
+    Set the splash to active by moving it to the active folder.
+    :param splash:
+    :return:
+    """
     log("Setting {} to active".format(splash))
     shutil.copy(splash, os.path.join(ACTIVESPLASH, "splash.png"))
     return os.path.dirname(splash)
@@ -218,14 +223,21 @@ class HatsSoManyHats(QObject):
             self.iface.mainWindow().setWindowIcon(icon)
 
         key = "Customization/splashpath"
+        activekey = "qgis_hats/active_splash"
         path = os.path.join(QgsApplication.qgisSettingsDirPath(), "QGIS", "QGISCUSTOMIZATION3.ini")
+        qgssettings = QgsSettings()
         settings = QSettings(path, QSettings.IniFormat)
+        activesplash = qgssettings.value(activekey, None)
         if splash:
-            set_splash_active(splash)
-            value = ACTIVESPLASH + os.sep
-            settings.setValue(key, value)
-            qgssettings = QgsSettings()
-            qgssettings.setValue("UI/Customization/enabled", True)
+            splashname = os.path.basename(splash)
+            if splashname != activesplash:
+                set_splash_active(splash)
+                value = ACTIVESPLASH + os.sep
+                settings.setValue(key, value)
+
+                qgssettings.setValue("UI/Customization/enabled", True)
+                qgssettings.setValue(activekey, splashname)
+                self.iface.messageBar().pushMessage("Splash", "Yay! New splash. Restart QGIS to check it out.")
         else:
             settings.remove(key)
 
