@@ -1,5 +1,5 @@
 # -----------------------------------------------------------
-# Copyright (C) 2015 Martin Dobias
+# Copyright (C) 2018 Nathan Woodrow
 # -----------------------------------------------------------
 # Licensed under the terms of GNU GPL 2
 # 
@@ -12,12 +12,16 @@
 import os
 import sys
 import pathlib
+import shutil
 
 WIN = os.name == "nt"
 
 PYTHON3 = sys.version_info[0] >= 3
 
 if PYTHON3:
+    import urllib.request
+    import json
+
     from urllib.error import HTTPError
     from urllib.request import urlopen
 else:
@@ -35,9 +39,40 @@ if __name__ == "__main__":
     log = print
 
 
-
 if WIN:
     from PyQt5.QtWinExtras import QWinTaskbarButton
+
+SUNURL = "https://api.sunrise-sunset.org/json?lat={latitude}&lng={longitude}&formatted=0"
+
+DAY = "day"
+NIGHT = "night"
+
+def _getsundata():
+    if os.path.exists("sun.json"):
+        with open("sun.json") as f:
+            return json.load(f)
+    else:
+        log("Fetching location info")
+        with urllib.request.urlopen("https://geoip-db.com/json") as url:
+            data = json.loads(url.read().decode())
+            with urllib.request.urlopen(SUNURL.format(**data)) as sunurl:
+                sundata = json.loads(sunurl.read().decode())
+                with open("sun.json", "w") as f:
+                    json.dump(sundata, f)
+                return sundata
+
+
+def is_it_daytime_or_nighttime():
+    sundata = _getsundata()
+    sunrise = sundata["results"]["sunrise"]
+    sunset = sundata["results"]["sunset"]
+    sunrise = QDateTime.fromString(sunrise, Qt.ISODate)
+    sunset = QDateTime.fromString(sunset, Qt.ISODate)
+    now = QDateTime.currentDateTimeUtc()
+    if now > sunrise and now < sunset:
+        return DAY
+    else:
+        return NIGHT
 
 
 def classFactory(iface):
@@ -61,6 +96,9 @@ else:
 HATSDIR = resolve(HATSDIRNAME)
 SPLASHDIRNAME = "SoManySplashes"
 SPLASHPATH = resolve(os.path.join(SPLASHDIRNAME, QGIS_VERSION))
+ACTIVESPLASH = os.path.join(SPLASHDIRNAME, "active")
+
+pathlib.Path(ACTIVESPLASH).mkdir(parents=True, exist_ok=True)
 
 URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/{folder}/{icon}"
 SPLASH_URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/{folder}/{version}/{icon}"
@@ -83,10 +121,12 @@ def hat_names(month, day, overlay=False, folder=HATSDIR):
 def splash_names(month, day):
     day = str(day).zfill(2)
     month = str(month).zfill(2)
-    dayname = "{0}-{1}.png".format(str(month), str(day))
-    monthname = "{0}.png".format(str(month))
-    fullpath = os.path.join(resolve(SPLASHPATH), str(month), str(day), "splash.png")
-    monthonly = os.path.join(resolve(SPLASHPATH), str(month), "splash.png")
+    mode = is_it_daytime_or_nighttime()
+    modestr = "-night" if mode == NIGHT else ""
+    dayname = "{0}-{1}{2}.png".format(str(month), str(day), modestr)
+    monthname = "{0}{1}.png".format(str(month), modestr)
+    fullpath = os.path.join(resolve(SPLASHPATH), dayname)
+    monthonly = os.path.join(resolve(SPLASHPATH), monthname)
     return fullpath, monthonly, dayname, monthname
 
 
@@ -109,10 +149,13 @@ def not_wearing_enough(month, day):
     path = get_final_path(fullpath, monthonly)
     splash = get_final_path(splash_fullpath, splash_monthonly)
 
-    if splash:
-        splash = os.path.dirname(splash)
     return path, overlay, splash
 
+
+def set_splash_active(splash):
+    log("Setting {} to active".format(splash))
+    shutil.copy(splash, os.path.join(ACTIVESPLASH, "splash.png"))
+    return os.path.dirname(splash)
 
 def get_more_hats(month, day):
     def fetch_more(url, folder, name, outpath, **kwargs):
@@ -178,29 +221,21 @@ class HatsSoManyHats(QObject):
         path = os.path.join(QgsApplication.qgisSettingsDirPath(), "QGIS", "QGISCUSTOMIZATION3.ini")
         settings = QSettings(path, QSettings.IniFormat)
         if splash:
-            value = splash + os.sep
-            currentvalue = settings.value(key)
-            if currentvalue != value:
-                log("Setting splash to {}".format(splash))
-                settings.setValue(key, value)
-                qgssettings = QgsSettings()
-                qgssettings.setValue("UI/Customization/enabled", True)
-                self.iface.messageBar().pushMessage("Splash updated! Yay. Restart QGIS to check it out!")
+            set_splash_active(splash)
+            value = ACTIVESPLASH + os.sep
+            settings.setValue(key, value)
+            qgssettings = QgsSettings()
+            qgssettings.setValue("UI/Customization/enabled", True)
         else:
             settings.remove(key)
-
-        # if overlay and WIN:
-        #     log("Set overlay", "hats")
-        #     self.button = QWinTaskbarButton()
-        #     self.button.setWindow(self.iface.mainWindow().windowHandle())
-        #     self.button.setOverlayIcon(QIcon(overlay))
-        # else:
-        #     log("No overlay set", "hats")
 
     def unload(self):
         pass
 
 
 if __name__ == "__main__":
-    t = HatsSoManyHats(None)
-    t.initGui()
+    current = QDateTime.currentDateTime()
+    month = current.date().month()
+    day = current.date().day()
+    hat, overlay, splash = not_wearing_enough(month, day)
+    set_splash_active(splash)
