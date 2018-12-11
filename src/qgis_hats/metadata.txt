@@ -2,7 +2,7 @@
 name=QGIS Hats
 description=Because people are not wearing enough hats.
 about=Downloads daily and monthly hats for QGIS.  Because why not ;)
-version=1.6
+version=1.7
 qgisMinimumVersion=2.0
 qgisMaximumVersion=3.99
 author=Nathan Woodrow
@@ -13,6 +13,7 @@ changelog=1.1 - Fix HTTPError import
 		  1.4 - Wait! Custom splash screens! You must be crazy. This must be like a major version bump but nope only up 0.1 :)
 		  1.5 - Doh!
 		  1.6 - Fix OS and linux paths
+		  1.7 - Who wears hats at night?! (Check Plugin menu for setting)
 icon=icon.png
 homepage=https://github.com/NathanW2/qgis_hats
 tracker=https://github.com/NathanW2/qgis_hats
