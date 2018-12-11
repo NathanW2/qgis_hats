@@ -229,6 +229,14 @@ class AboutDialog(QDialog):
         super().__init__(parent)
         loadUi(resolve("about.ui"), self)
 
+    @property
+    def time_enabled(self):
+        return self.setting_timesplash.isChecked()
+
+    @time_enabled.setter
+    def time_enabled(self, value):
+        self.setting_timesplash.setChecked(value)
+
 
 class HatsSoManyHats(QObject):
     def __init__(self, iface):
@@ -238,10 +246,10 @@ class HatsSoManyHats(QObject):
         self.about_action.triggered.connect(self.show_about)
 
     def show_about(self):
-        log("Show about")
         dlg = AboutDialog(self.iface.mainWindow())
+        dlg.time_enabled = qgssettings.value(TIMEKEY, False, type=bool)
         if dlg.exec_():
-            timeenabled = dlg.setting_timesplash.isChecked()
+            timeenabled = dlg.time_enabled
             qgssettings.setValue(TIMEKEY, timeenabled)
 
     def initGui(self):
