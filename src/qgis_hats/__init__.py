@@ -30,6 +30,7 @@ else:
 from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtWidgets import *
+from qgis.PyQt.uic import loadUi
 from qgis.core import QgsMessageLog, Qgis, QgsSettings, QgsApplication
 
 
@@ -72,6 +73,12 @@ pathlib.Path(ACTIVESPLASH).mkdir(parents=True, exist_ok=True)
 SUNURL = "https://api.sunrise-sunset.org/json?lat={latitude}&lng={longitude}&formatted=0"
 URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/{folder}/{icon}"
 SPLASH_URL = "https://raw.githubusercontent.com/NathanW2/qgis_hats/master/{folder}/{version}/{icon}"
+SETTINGKEY = "qgis_hats"
+TIMEKEY = "{}/time_enabled_splash".format(SETTINGKEY)
+
+qgssettings = QgsSettings()
+
+time_is_enabled = qgssettings.value(TIMEKEY, False)
 
 
 def _get_sun_data():
@@ -80,6 +87,10 @@ def _get_sun_data():
         with open(SUNFILE) as f:
             return json.load(f)
     else:
+        if not time_is_enabled:
+            log("Fetching sun data online disabled")
+            return {}
+
         log("Fetching location info")
         try:
             with urllib.request.urlopen("https://geoip-db.com/json") as url:
@@ -213,19 +224,28 @@ def get_more_hats(month, day):
     fetch_more(SPLASH_URL, SPLASHDIRNAME, splash_monthname, splash_monthonly, version=QGIS_VERSION)
 
 
+class AboutDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        loadUi(resolve("about.ui"), self)
+
+
 class HatsSoManyHats(QObject):
     def __init__(self, iface):
         super().__init__()
         self.iface = iface
-        # self.iface.mainWindow().installEventFilter(self)
+        self.about_action = QAction(QIcon(resolve("icon.png")), "About QGIS Hats!")
+        self.about_action.triggered.connect(self.show_about)
 
-    # def eventFilter(self, object, event):
-    #     if self.iface.mainWindow().windowHandle() and self.iface.mainWindow().windowHandle().title():
-    #         self.show_the_hats()
-    #
-    #     return super().eventFilter(object, event)
+    def show_about(self):
+        log("Show about")
+        dlg = AboutDialog(self.iface.mainWindow())
+        if dlg.exec_():
+            timeenabled = dlg.setting_timesplash.isChecked()
+            qgssettings.setValue(TIMEKEY, timeenabled)
 
     def initGui(self):
+        self.iface.addPluginToMenu("QGIS Hats", self.about_action)
         self.show_the_hats()
 
     def show_the_hats(self):
@@ -240,9 +260,8 @@ class HatsSoManyHats(QObject):
             self.iface.mainWindow().setWindowIcon(icon)
 
         key = "Customization/splashpath"
-        activekey = "qgis_hats/active_splash"
+        activekey = "{}/active_splash".format(SETTINGKEY)
         path = os.path.join(QgsApplication.qgisSettingsDirPath(), "QGIS", "QGISCUSTOMIZATION3.ini")
-        qgssettings = QgsSettings()
         settings = QSettings(path, QSettings.IniFormat)
         activesplash = qgssettings.value(activekey, None)
         if splash:
