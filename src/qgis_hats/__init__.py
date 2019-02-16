@@ -116,8 +116,10 @@ def is_nighttime():
     sunset = sundata["results"]["sunset"]
     sunrise = QDateTime.fromString(sunrise, Qt.ISODate)
     sunset = QDateTime.fromString(sunset, Qt.ISODate)
-    now = QDateTime.currentDateTimeUtc()
-    if sunrise < now < sunset:
+    now = QTime.currentTime()
+    sunrisetime=sunrise.time()
+    sunsettime=sunset.time()
+    if sunrisetime < now < sunsettime:
         log("Day")
         return False
     else:
