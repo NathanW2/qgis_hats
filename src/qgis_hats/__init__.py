@@ -13,6 +13,7 @@ import os
 import sys
 import pathlib
 import shutil
+import time
 
 WIN = os.name == "nt"
 
@@ -82,8 +83,7 @@ time_is_enabled = qgssettings.value(TIMEKEY, False)
 
 
 def _get_sun_data():
-    # TODO: Add 30 day time out on sun data
-    if os.path.exists(SUNFILE):
+    if os.path.exists(SUNFILE) and ((time.time()-os.path.getctime(SUNFILE))/(3600*24))<30:
         with open(SUNFILE) as f:
             return json.load(f)
     else:
