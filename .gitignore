@@ -57,3 +57,5 @@ src/qgis_hats/SoManyMoreHats
 src/qgis_hats/SoManyHats
 src/qgis_hats/SoManySplashes
 sun.json
+*.psd
+*.svg
