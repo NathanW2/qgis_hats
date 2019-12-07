@@ -14,6 +14,8 @@ changelog=1.1 - Fix HTTPError import
 		  1.5 - Doh!
 		  1.6 - Fix OS and linux paths
 		  1.7 - Who wears hats at night?! (Check Plugin menu for setting)
+		  1.8 - Fixed nighttime check. Thanks to Michel Stuyts (@mstuyts) for the fix.
+		        30 day timeout for sun checks. Thanks to Michel Stuyts (@mstuyts) for the fix.
 icon=icon.png
 homepage=https://github.com/NathanW2/qgis_hats
 tracker=https://github.com/NathanW2/qgis_hats
