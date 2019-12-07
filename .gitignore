@@ -60,3 +60,5 @@ sun.json
 *.psd
 *.svg
 .idea
+qgis/
+qgis_hats.zip
