@@ -1,8 +1,11 @@
 # Hats for QGIS icons
 
+Adds new hats to your QGIS icons based on the day and month. Also changes the splash
+screen for a bit QGIS loading time fun.
+
 Send me your PRs! You know you want to!
 
-![Alt text](SoManyHats/12-05.png?raw=true "Title")
+![Alt text](icon.png "QGIS icon with santa hat")
 
 Because
 
@@ -28,23 +31,19 @@ Just install using the plugin installer. Done.  You now get daily/monthly hats f
 
 It's pretty much a win win for you, QGIS, and hats all around the world.
 
-## Adding a new hat?
+## Adding a new hat? QGIS 3
 
-Create a png file in SoManyHats using the following format:
+![Alt text](icon.png "QGIS icon with santa hat")
+
+
+Create a png file in **SoManyMoreHats** using the following format:
 
 `{month}-{day}.png`
 
 or just `{month}.png` if it's to conver a full month.
 
-Here is a easy example:
+## Adding a new hat? QGIS 2 but really you should be using QGIS 3...
 
-![Alt text](SoManyHats/12-05.png?raw=true "Title")
+Create a png file in SoManyHats using the same format
 
-## Adding a new hat? QGIS 3
 
-Add _3 to the end of the file name to make it usable by QGIS 3.
-
-Example:
-
-03_03.png <- QGIS 3 icon
-03.png <- QGIS 2 icon
