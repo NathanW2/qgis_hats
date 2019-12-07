@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 
@@ -59,3 +59,4 @@ src/qgis_hats/SoManySplashes
 sun.json
 *.psd
 *.svg
+.idea
