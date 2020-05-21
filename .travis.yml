@@ -1,0 +1,12 @@
+language: python
+python:
+  - 3.7
+
+install:
+  - pip install qgis-plugin-ci
+
+deploy:
+  provider: script
+  script: qgis-plugin-ci release ${TRAVIS_TAG} --github-token ${GH_TOKEN} --osgeo-username ${OSGEO_USERNAME} --osgeo-password {OSGEO_PASSWORD}
+  on:
+    tags: true
